@@ -1,0 +1,15 @@
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"addin",
+	"author":	"Evan Digby",
+	"description":	{
+		"":	"Create a stop motion animation armature joint."
+	},
+	"supportedOS":	"windows|mac",
+	"editEnabled":	true,
+	"id":	"1f11116d-d7c5-4baa-8325-655b07f9136a",
+	"version":	"0.0.1",
+	"runOnStartup":	false,
+	"sourcewindows":	"Armature Joint.vcxproj",
+	"sourcemac":	"Armature Joint.xcodeproj"
+}
