@@ -51,7 +51,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;SIMPLE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -94,6 +94,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ArmatureCommandCreated.cpp" />
+    <ClCompile Include="ArmatureCommandExecuted.cpp" />
+    <ClCompile Include="ArmatureCommandInputChanged.cpp" />
+    <ClCompile Include="ArmatureJointApp.cpp" />
+    <ClCompile Include="ArmatureValues.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Armature Joint.manifest">
@@ -103,6 +108,14 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ArmatureCommandCreated.h" />
+    <ClInclude Include="ArmatureCommandExecuted.h" />
+    <ClInclude Include="ArmatureCommandInputChanged.h" />
+    <ClInclude Include="ArmatureJointApp.h" />
+    <ClInclude Include="ArmatureUI.h" />
+    <ClInclude Include="ArmatureValues.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
