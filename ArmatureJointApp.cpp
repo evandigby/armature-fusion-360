@@ -1,5 +1,7 @@
 #include "ArmatureJointApp.h"
 
+#define ARMATURE_JOINT_COMMAND_ID "createArmatureJoint"
+
 ArmatureJointApp::ArmatureJointApp() {
 	auto app = Application::get();
 	assert(app);
@@ -11,8 +13,8 @@ ArmatureJointApp::ArmatureJointApp() {
 	assert(definitions);
 
 	button = definitions->addButtonDefinition(
-		ARMATURE_COMMAND_ID,
-		"Create Armature",
+		ARMATURE_JOINT_COMMAND_ID,
+		"Create Armature Joint",
 		"Creates a stop motion animation armature",
 		""
 	);
@@ -23,7 +25,7 @@ ArmatureJointApp::ArmatureJointApp() {
 	auto commandCreated = button->commandCreated();
 	assert(commandCreated);
 
-	commandCreatedEvent = new ArmatureCommandCreated(app);
+	commandCreatedEvent = new ArmatureJoint::CommandCreated(app);
 	commandCreated->add(commandCreatedEvent);
 
 	auto panels = ui->allToolbarPanels();

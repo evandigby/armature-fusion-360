@@ -6,9 +6,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include "ArmatureValues.h"
-#include "ArmatureUI.h"
-#include "ArmatureCommandCreated.h"
+#include "ArmatureJoint/CommandCreated.h"
 
 using namespace std;
 using namespace adsk::core;
@@ -25,5 +23,5 @@ private:
 	Ptr<UserInterface> ui;
 	Ptr<CommandDefinition> button;
 	Ptr<CommandControl> control;
-	ArmatureCommandCreated* commandCreatedEvent;
+	ArmatureJoint::CommandCreated* commandCreatedEvent;
 };
