@@ -10,6 +10,8 @@
 #include "UI.h"
 
 namespace ArmatureJoint {
+	Ptr<UnitsManager> Values::unitsManager;
+
 	double Values::circleRadiusOfSphere(double sphereDiameter, double offset) {
 		double sphereRadius = sphereDiameter / 2;
 
@@ -20,34 +22,46 @@ namespace ArmatureJoint {
 		return sqrt(pow(circleRadius, 2) + pow(offset, 2));
 	}
 
-	double Values::defaultLength(Ptr<UnitsManager> unitsManager) {
+	double Values::defaultLength() {
 		return unitsManager->convert(15, "mm", unitsManager->internalUnits());
 	}
 
-	double Values::defaultWidth(Ptr<UnitsManager> unitsManager) {
-		return unitsManager->convert(5, "mm", unitsManager->internalUnits());
+	double Values::defaultWidth() {
+		return unitsManager->convert(10, "mm", unitsManager->internalUnits());
 	}
 
-	double Values::defaultThickness(Ptr<UnitsManager> unitsManager) {
+	double Values::defaultThickness() {
 		return unitsManager->convert((double)1 / (double)16, "in", unitsManager->internalUnits());
 	}
 
-	double Values::defaultBallDiameter(Ptr<UnitsManager> unitsManager) {
-		return defaultWidth(unitsManager) / 1.5;
+	double Values::defaultBallDiameter() {
+		return unitsManager->convert(5, "mm", unitsManager->internalUnits());
 	}
 
-	double Values::defaultRows(Ptr<UnitsManager> unitsManager) {
+	double Values::defaultRows() {
 		return 2;
 	}
 
-	double Values::defaultCols(Ptr<UnitsManager> unitsManager) {
+	double Values::defaultCols() {
 		return 1;
+	}
+
+	double Values::defaultHoleDiameter() {
+		return unitsManager->convert(3, "mm", unitsManager->internalUnits());
+	}
+
+	double Values::defaultBoltHoleDiameter() {
+		return unitsManager->convert(3, "mm", unitsManager->internalUnits());
 	}
 
 	shared_ptr<Values> Values::create(Ptr<CommandInputs> inputs) {
 		shared_ptr<Values> values(new Values());
 
 		if (!inputs)
+			return nullptr;
+
+		values->nameInput = inputs->itemById(ARMATURE_JOINT_COMMAND_NAME_INPUT_ID);
+		if (!values->nameInput)
 			return nullptr;
 
 		values->lengthInput = inputs->itemById(ARMATURE_JOINT_COMMAND_LENGTH_INPUT_ID);
@@ -74,41 +88,61 @@ namespace ArmatureJoint {
 		if (!values->colsInput)
 			return nullptr;
 
+		values->boltHoleInput = inputs->itemById(ARMATURE_JOINT_COMMAND_BOLT_HOLE_DIAMETER_INPUT_ID);
+		if (!values->boltHoleInput)
+			return nullptr;
+
 		values->tableInput = inputs->itemById(ARMATURE_JOINT_COMMAND_TABLE_INPUT_ID);
 		if (!values->tableInput)
 			return nullptr;
 
-		values->tableInput->numberOfColumns(values->cols());
+		values->tableInput->numberOfColumns(values->cols() * 2);
 
-		for (auto i = values->tableInput->rowCount(); i >= values->rows(); i--)
+		for (auto i = values->tableInput->rowCount(); i >= values->rows() * 2; i--)
 		{
 			values->tableInput->deleteRow(i);
 		}
 
 		auto tableInputs = values->tableInput->commandInputs();
+
 		for (auto col = 0; col < values->cols(); col++) {
 			for (auto row = 0; row < values->rows(); row++) {
 
-				auto id = "tableInputType_" + std::to_string(col) + "_" + std::to_string(row);
+				auto typeID = "tableInputType_" + std::to_string(col) + "_" + std::to_string(row);
 
-				auto tableInput = static_cast<Ptr<RadioButtonGroupCommandInput>>(tableInputs->itemById(id));
-				if (tableInput) {
-					continue;
+				auto tableInputType = static_cast<Ptr<RadioButtonGroupCommandInput>>(tableInputs->itemById(typeID));
+				if (!tableInputType) {
+					auto radio = tableInputs->addRadioButtonGroupCommandInput(typeID, "Type");
+					if (!radio)
+						return nullptr;
+
+					auto items = radio->listItems();
+					if (!items)
+						return nullptr;
+
+					auto ball = items->add(ARMATURE_JOINT_OPTION_BALL, true);
+					auto nut = items->add(ARMATURE_JOINT_OPTION_NUT, false);
+					auto none = items->add(ARMATURE_JOINT_OPTION_NONE, false);
+
+					values->tableInput->addCommandInput(radio, row * 2, col);
 				}
 
-				auto radio = tableInputs->addRadioButtonGroupCommandInput(id, "Type");
-				if (!radio)
-					return nullptr;
 
-				auto items = radio->listItems();
-				if (!items)
-					return nullptr;
+				auto holeDiameterID = "tableInputHoleDiameter_" + std::to_string(col) + "_" + std::to_string(row);
+				auto tableInputHoleDiameter = static_cast<Ptr<DistanceValueCommandInput>>(tableInputs->itemById(holeDiameterID));
+				if (!tableInputHoleDiameter) {
+					auto holeDiameter = tableInputs->addDistanceValueCommandInput(
+						holeDiameterID,
+						"Hole Diameter",
+						ValueInput::createByReal(values->defaultHoleDiameter())
+					);
+					if (!holeDiameter)
+						return false;
 
-				auto ball = items->add(ARMATURE_JOINT_OPTION_BALL, true);
-				auto nut = items->add(ARMATURE_JOINT_OPTION_NUT, false);
-				auto none = items->add(ARMATURE_JOINT_OPTION_NONE, false);
-
-				values->tableInput->addCommandInput(radio, row, col);
+					auto cmdInput = values->tableInput->addCommandInput(holeDiameter, (row * 2) + 1, col);
+					if (!cmdInput)
+						return false;
+				}
 			}
 		}
 
@@ -119,7 +153,7 @@ namespace ArmatureJoint {
 		row--;
 		col--;
 
-		auto input = static_cast<Ptr<RadioButtonGroupCommandInput>>(tableInput->getInputAtPosition(row, col));
+		auto input = static_cast<Ptr<RadioButtonGroupCommandInput>>(tableInput->getInputAtPosition((row * 2), col));
 		if (!input)
 			return ARMATURE_JOINT_OPTION_NONE;
 
@@ -224,5 +258,40 @@ namespace ArmatureJoint {
 		if (!colsInput)
 			return 1;
 		return colsInput->value();
+	}
+
+	std::string Values::name() {
+		if (!nameInput)
+			return "";
+
+		return nameInput->value();
+	}
+	double Values::holeDiameter(int row, int col) {
+		row--;
+		col--;
+
+		auto input = static_cast<Ptr<DistanceValueCommandInput>>(tableInput->getInputAtPosition((row * 2) + 1, col));
+		if (!input)
+			return 0;
+		return input->value();
+	}
+
+	double Values::holeRadius(int row, int col) {
+		return holeDiameter(row, col) / 2;
+	}
+
+	double Values::boltHoleDiameter() {
+		if (!boltHoleInput)
+			return 0;
+
+		return boltHoleInput->value();
+	}
+
+	double Values::boltHoleRadius() {
+		return boltHoleDiameter() / 2;
+	}
+
+	double Values::boltCircleArea() {
+		return  M_PI * pow(boltHoleRadius(), 2);
 	}
 }

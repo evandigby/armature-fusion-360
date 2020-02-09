@@ -9,15 +9,15 @@
 
 namespace ArmatureJoint {
 	bool CommandExecuted::createJointPlate(Ptr<Component> component, Ptr<ConstructionPlane> plane, shared_ptr<Values> values) {
-		if (!component->name("joint"))
-			return false;
-
 		auto sketches = component->sketches();
 		if (!sketches)
 			return false;
 
 		auto sketch = sketches->add(plane);
 		if (!sketch)
+			return false;
+
+		if (!sketch->name("Joint Plate"))
 			return false;
 
 		auto curves = sketch->sketchCurves();
@@ -38,6 +38,19 @@ namespace ArmatureJoint {
 			return false;
 
 		double expectedSubtractionArea = 0;
+
+		auto boltCircle = circles->addByCenterRadius(
+			Point3D::create(
+				values->length() / 2,
+				-values->width() / 2,
+				0
+			),
+			values->boltHoleRadius()
+		);
+		if (!boltCircle)
+			return false;
+
+		expectedSubtractionArea += values->boltCircleArea();
 
 		for (auto row = 1; row <= values->rows(); row++) {
 			for (auto col = 1; col <= values->cols(); col++) {
@@ -133,6 +146,8 @@ namespace ArmatureJoint {
 		if (!plane)
 			return false;
 
+		plane->name("Joint Ball");
+
 		auto sketches = component->sketches();
 		if (!sketches)
 			return false;
@@ -144,6 +159,9 @@ namespace ArmatureJoint {
 				
 				auto sketch = sketches->add(plane);
 				if (!sketch)
+					return false;
+
+				if (!sketch->name("Ball Circles"))
 					return false;
 
 				auto curves = sketch->sketchCurves();
@@ -197,7 +215,8 @@ namespace ArmatureJoint {
 				if (!revolveInput)
 					return false;
 
-				revolveInput->setAngleExtent(false, ValueInput::createByReal(2 * M_PI));
+				if (!revolveInput->setAngleExtent(false, ValueInput::createByString("360.0 deg")))
+					return false;
 
 				auto revolve = revolves->add(revolveInput);
 				if (!revolve)
@@ -209,8 +228,70 @@ namespace ArmatureJoint {
 
 				for (auto i = 0; i < bodies->count(); i++) {
 					auto body = bodies->item(i);
-					body->name("Ball_" + std::to_string(row) + "_" + std::to_string(col));
+					body->name("Ball_" + std::to_string(row) + "_" + std::to_string(col) + "_" + std::to_string(i));
 				}
+
+				auto ballHolePlaneInput = planes->createInput();
+				if (!ballHolePlaneInput)
+					return false;
+
+				if (!ballHolePlaneInput->setByAngle(ballLine, ValueInput::createByString("90.0 deg"), ballProfile))
+					return false;
+
+				auto ballHolePlane = planes->add(ballHolePlaneInput);
+				if (!ballHolePlane)
+					return false;
+
+				if (!ballHolePlane->name("Ball Screw Hole"))
+					return false;
+
+				auto holeSketch = sketches->add(ballHolePlane);
+				if (!holeSketch)
+					return false;
+
+				if (!holeSketch->name("Ball Screw Hole"))
+					return false;
+
+				auto holeCurves = holeSketch->sketchCurves();
+				if (!holeCurves)
+					return false;
+
+				auto holeCircles = holeCurves->sketchCircles();
+				if (!holeCircles)
+					return false;
+
+				auto ballHoleCircle = holeCircles->addByCenterRadius(
+					Point3D::create(0, 0, 0),
+					values->holeRadius(row, col)
+				);
+				if (!ballHoleCircle)
+					return false;
+
+				auto holeProfiles = holeSketch->profiles();
+				if (!holeProfiles)
+					return false;
+
+				auto holeProfile = holeProfiles->item(0);
+				if (!holeProfile)
+					return false;
+
+				auto extrudes = features->extrudeFeatures();
+				if (!extrudes)
+					return false;
+
+				auto holeExtrudeInput = extrudes->createInput(holeProfile, FeatureOperations::CutFeatureOperation);
+				if (!holeExtrudeInput)
+					return false;
+
+				auto radius = values->ballRadius();
+				if (col % 2 != 0)
+					radius = -radius;
+
+				holeExtrudeInput->setDistanceExtent(false, ValueInput::createByReal(radius));
+
+				auto holeExtrude = extrudes->add(holeExtrudeInput);
+				if (!holeExtrude)
+					return false;
 			}
 		}
 	}
@@ -253,6 +334,9 @@ namespace ArmatureJoint {
 		if (!component)
 			return;
 
+		if (!component->name(values->name()))
+			return;
+
 		auto planes = component->constructionPlanes();
 		if (!planes)
 			return;
@@ -265,6 +349,9 @@ namespace ArmatureJoint {
 
 		auto plane = planes->add(planeInput);
 		if (!plane)
+			return;
+
+		if (!plane->name("Joint Top Offset"))
 			return;
 
 		if (!createJointPlate(component, component->xZConstructionPlane(), values))

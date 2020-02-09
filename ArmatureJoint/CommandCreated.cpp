@@ -23,14 +23,24 @@ namespace ArmatureJoint {
 		if (!unitsManager)
 			return;
 
+		Values::unitsManager = unitsManager;
+
 		auto inputs = cmd->commandInputs();
 		if (!inputs)
+			return;
+
+		auto nameInput = inputs->addStringValueInput(
+			ARMATURE_JOINT_COMMAND_NAME_INPUT_ID,
+			"Name",
+			"Joint"
+		);
+		if (!nameInput)
 			return;
 
 		auto lengthInput = inputs->addDistanceValueCommandInput(
 			ARMATURE_JOINT_COMMAND_LENGTH_INPUT_ID,
 			"Joint Length",
-			ValueInput::createByReal(Values::defaultLength(unitsManager))
+			ValueInput::createByReal(Values::defaultLength())
 		);
 		if (!lengthInput)
 			return;
@@ -38,7 +48,7 @@ namespace ArmatureJoint {
 		auto widthInput = inputs->addDistanceValueCommandInput(
 			ARMATURE_JOINT_COMMAND_WIDTH_INPUT_ID,
 			"Joint Width",
-			ValueInput::createByReal(Values::defaultWidth(unitsManager))
+			ValueInput::createByReal(Values::defaultWidth())
 		);
 		if (!widthInput)
 			return;
@@ -46,15 +56,23 @@ namespace ArmatureJoint {
 		auto plateThicknessInput = inputs->addDistanceValueCommandInput(
 			ARMATURE_JOINT_COMMAND_PLATE_THICKNESS_INPUT_ID,
 			"Plate Thickness",
-			ValueInput::createByReal(Values::defaultThickness(unitsManager))
+			ValueInput::createByReal(Values::defaultThickness())
 		);
 		if (!plateThicknessInput)
+			return;
+
+		auto boltHoleDiameterInput = inputs->addDistanceValueCommandInput(
+			ARMATURE_JOINT_COMMAND_BOLT_HOLE_DIAMETER_INPUT_ID,
+			"Bolt Hole Diameter",
+			ValueInput::createByReal(Values::defaultBoltHoleDiameter())
+		);
+		if (!boltHoleDiameterInput)
 			return;
 
 		auto ballDiameterInput = inputs->addDistanceValueCommandInput(
 			ARMATURE_JOINT_COMMAND_BALL_DIAMETER_INPUT_ID,
 			"Ball Diameter",
-			ValueInput::createByReal(Values::defaultBallDiameter(unitsManager))
+			ValueInput::createByReal(Values::defaultBallDiameter())
 		);
 		if (!ballDiameterInput)
 			return;
@@ -65,7 +83,7 @@ namespace ArmatureJoint {
 			1,
 			10,
 			1,
-			ValueInput::createByReal(Values::defaultRows(unitsManager))
+			ValueInput::createByReal(Values::defaultRows())
 		);
 		if (!ballRowsInput)
 			return;
@@ -76,7 +94,7 @@ namespace ArmatureJoint {
 			1,
 			2,
 			1,
-			ValueInput::createByReal(Values::defaultCols(unitsManager))
+			ValueInput::createByReal(Values::defaultCols())
 		);
 		if (!ballColsInput)
 			return;
