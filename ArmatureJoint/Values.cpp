@@ -3,6 +3,8 @@
 #include <CAM/CAMAll.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <string>
+#include <algorithm>
 
 #include "Values.h"
 #include "UI.h"
@@ -64,7 +66,6 @@ namespace ArmatureJoint {
 		if (!values->ballDiameterInput)
 			return nullptr;
 
-		auto test = inputs->itemById(ARMATURE_JOINT_COMMAND_ROWS_INPUT_ID);
 		values->rowsInput = inputs->itemById(ARMATURE_JOINT_COMMAND_ROWS_INPUT_ID);
 		if (!values->rowsInput)
 			return nullptr;
@@ -73,7 +74,60 @@ namespace ArmatureJoint {
 		if (!values->colsInput)
 			return nullptr;
 
+		values->tableInput = inputs->itemById(ARMATURE_JOINT_COMMAND_TABLE_INPUT_ID);
+		if (!values->tableInput)
+			return nullptr;
+
+		values->tableInput->numberOfColumns(values->cols());
+
+		for (auto i = values->tableInput->rowCount(); i >= values->rows(); i--)
+		{
+			values->tableInput->deleteRow(i);
+		}
+
+		auto tableInputs = values->tableInput->commandInputs();
+		for (auto col = 0; col < values->cols(); col++) {
+			for (auto row = 0; row < values->rows(); row++) {
+
+				auto id = "tableInputType_" + std::to_string(col) + "_" + std::to_string(row);
+
+				auto tableInput = static_cast<Ptr<RadioButtonGroupCommandInput>>(tableInputs->itemById(id));
+				if (tableInput) {
+					continue;
+				}
+
+				auto radio = tableInputs->addRadioButtonGroupCommandInput(id, "Type");
+				if (!radio)
+					return nullptr;
+
+				auto items = radio->listItems();
+				if (!items)
+					return nullptr;
+
+				auto ball = items->add(ARMATURE_JOINT_OPTION_BALL, true);
+				auto nut = items->add(ARMATURE_JOINT_OPTION_NUT, false);
+				auto none = items->add(ARMATURE_JOINT_OPTION_NONE, false);
+
+				values->tableInput->addCommandInput(radio, row, col);
+			}
+		}
+
 		return values;
+	}
+
+	std::string Values::jointType(int row, int col) {
+		row--;
+		col--;
+
+		auto input = static_cast<Ptr<RadioButtonGroupCommandInput>>(tableInput->getInputAtPosition(row, col));
+		if (!input)
+			return ARMATURE_JOINT_OPTION_NONE;
+
+		auto selection = input->selectedItem();
+		if (!selection)
+			return ARMATURE_JOINT_OPTION_NONE;
+
+		return selection->name();
 	}
 
 	double Values::ballDiameter() {

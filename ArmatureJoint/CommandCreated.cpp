@@ -81,6 +81,15 @@ namespace ArmatureJoint {
 		if (!ballColsInput)
 			return;
 
+		auto tableInput = inputs->addTableCommandInput(
+			ARMATURE_JOINT_COMMAND_TABLE_INPUT_ID,
+			"Specifications",
+			2,
+			"1:1"
+		);
+		if (!tableInput)
+			return;
+
 		auto values = Values::create(inputs);
 		if (!values)
 			return;

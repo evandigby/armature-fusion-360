@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/CoreAll.h>
+#include <list>
 
 using namespace std;
 using namespace adsk::core;
@@ -33,6 +34,7 @@ namespace ArmatureJoint {
 		double maxBallDiameter();
 		int rows();
 		int cols();
+		std::string jointType(int row, int col);
 
 	private:
 		Ptr<DistanceValueCommandInput> lengthInput;
@@ -41,5 +43,6 @@ namespace ArmatureJoint {
 		Ptr<DistanceValueCommandInput> ballDiameterInput;
 		Ptr<IntegerSpinnerCommandInput> rowsInput;
 		Ptr<IntegerSpinnerCommandInput> colsInput;
+		Ptr<TableCommandInput> tableInput;
 	};
 }

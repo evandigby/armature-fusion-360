@@ -3,6 +3,10 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <string>
+
+#include "UI.h"
+
 namespace ArmatureJoint {
 	bool CommandExecuted::createJointPlate(Ptr<Component> component, Ptr<ConstructionPlane> plane, shared_ptr<Values> values) {
 		if (!component->name("joint"))
@@ -33,8 +37,13 @@ namespace ArmatureJoint {
 		if (!circles)
 			return false;
 
+		double expectedSubtractionArea = 0;
+
 		for (auto row = 1; row <= values->rows(); row++) {
 			for (auto col = 1; col <= values->cols(); col++) {
+				if (values->jointType(row, col) != ARMATURE_JOINT_OPTION_BALL)
+					continue;
+
 				auto ballCircle = circles->addByCenterRadius(
 					Point3D::create(
 						values->ballX(col),
@@ -45,6 +54,8 @@ namespace ArmatureJoint {
 				);
 				if (!ballCircle)
 					return false;
+
+				expectedSubtractionArea += values->circleArea();
 			}
 		}
 
@@ -61,7 +72,7 @@ namespace ArmatureJoint {
 			return false;
 
 		auto accuracy = CalculationAccuracy::LowCalculationAccuracy;
-		auto expectedArea = rectangleArea - (values->circleArea() * values->rows() * values->cols());
+		auto expectedArea = rectangleArea - expectedSubtractionArea;
 		auto delta = expectedArea * 0.005; // Low calculation accuracy is within 0.5%. We don't have many profiles so that's fine.
 
 		Ptr<Profile> profile;
@@ -102,7 +113,7 @@ namespace ArmatureJoint {
 			if (!body)
 				return false;
 
-			body->name("Joint Half");
+			body->name("Plate");
 		}
 		return true;
 	}
@@ -128,6 +139,9 @@ namespace ArmatureJoint {
 
 		for (auto row = 1; row <= values->rows(); row++) {
 			for (auto col = 1; col <= values->cols(); col++) {
+				if (values->jointType(row, col) != ARMATURE_JOINT_OPTION_BALL)
+					continue;
+				
 				auto sketch = sketches->add(plane);
 				if (!sketch)
 					return false;
@@ -195,7 +209,7 @@ namespace ArmatureJoint {
 
 				for (auto i = 0; i < bodies->count(); i++) {
 					auto body = bodies->item(i);
-					body->name("Ball");
+					body->name("Ball_" + std::to_string(row) + "_" + std::to_string(col));
 				}
 			}
 		}
