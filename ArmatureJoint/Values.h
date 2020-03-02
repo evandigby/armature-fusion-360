@@ -26,12 +26,14 @@ namespace ArmatureJoint {
 		double thickness();
 		void setExtents();
 		double ballOffset();
+		double plateOffset();
 		double ballRadius();
 		double ballX(int col);
 		double ballY(int row);
 		double ballZ();
 		double circleRadius();
 		double circleArea();
+		double circleCircumference();
 		double minWidth();
 		double maxBallDiameter();
 		double holeDiameter(int row, int col);
@@ -39,7 +41,11 @@ namespace ArmatureJoint {
 		double boltHoleRadius();
 		double boltCircleArea();
 		double holeRadius(int row, int col);
-
+		double chamferLength();
+		double chamferAngle();
+		double expectedArea();
+		
+		int numJointTypes(std::string jointType);
 		int rows();
 		int cols();
 		std::string jointType(int row, int col);

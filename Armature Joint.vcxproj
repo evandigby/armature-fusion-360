@@ -99,6 +99,7 @@
     <ClCompile Include="ArmatureJoint\CommandInputChanged.cpp" />
     <ClCompile Include="ArmatureJointApp.cpp" />
     <ClCompile Include="ArmatureJoint\Values.cpp" />
+    <ClCompile Include="ArmatureJoint\JointPlate.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Armature Joint.manifest">
@@ -116,6 +117,7 @@
     <ClInclude Include="ArmatureJointApp.h" />
     <ClInclude Include="ArmatureJoint\UI.h" />
     <ClInclude Include="ArmatureJoint\Values.h" />
+    <ClInclude Include="ArmatureJoint\JointPlate.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

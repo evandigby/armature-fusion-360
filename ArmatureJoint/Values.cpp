@@ -12,14 +12,12 @@
 namespace ArmatureJoint {
 	Ptr<UnitsManager> Values::unitsManager;
 
-	double Values::circleRadiusOfSphere(double sphereDiameter, double offset) {
-		double sphereRadius = sphereDiameter / 2;
-
+	double Values::circleRadiusOfSphere(double sphereRadius, double offset) {
 		return sqrt(pow(sphereRadius, 2) - pow(offset, 2));
 	}
 
 	double Values::diameterForCircleRadiusOfSphere(double circleRadius, double offset) {
-		return sqrt(pow(circleRadius, 2) + pow(offset, 2));
+		return sqrt(pow(circleRadius, 2) + pow(offset, 2)) * 2;
 	}
 
 	double Values::defaultLength() {
@@ -27,7 +25,7 @@ namespace ArmatureJoint {
 	}
 
 	double Values::defaultWidth() {
-		return unitsManager->convert(10, "mm", unitsManager->internalUnits());
+		return unitsManager->convert(6, "mm", unitsManager->internalUnits());
 	}
 
 	double Values::defaultThickness() {
@@ -191,6 +189,13 @@ namespace ArmatureJoint {
 		return thicknessInput->value();
 	}
 
+	double Values::chamferLength() {
+		return ballRadius() / 6;
+	}
+	double Values::chamferAngle() {
+		return M_PI_4; // 45 degrees in radians
+	}
+
 	void Values::setExtents() {
 		lengthInput->setManipulator(Point3D::create(0, 0, 0), Vector3D::create(1, 0, 0));
 		widthInput->setManipulator(Point3D::create(0, 0, 0), Vector3D::create(0, 0, 1));
@@ -207,7 +212,7 @@ namespace ArmatureJoint {
 	}
 
 	double Values::ballOffset() {
-		return ballDiameter() / 3;
+		return ballRadius() / 1.2;
 	}
 
 	double Values::ballRadius() {
@@ -216,9 +221,9 @@ namespace ArmatureJoint {
 
 	double Values::ballX(int col) {
 		if (col == 1)
-			return ballRadius();
+			return ballRadius() / 1.25;
 
-		return length() - ballRadius();
+		return length() - (ballRadius() / 1.25);
 	}
 
 	double Values::ballY(int row) {
@@ -227,16 +232,24 @@ namespace ArmatureJoint {
 		return -((rowSize * row) - (rowSize / 2));
 	}
 
+	double Values::plateOffset() {
+		return ballOffset() - (chamferLength() / 1.25);
+	}
+
 	double Values::ballZ() {
-		return thickness() + ballRadius() - (ballOffset() / 2);
+		return thickness() + plateOffset();
 	}
 
 	double Values::circleRadius() {
-		return circleRadiusOfSphere(ballDiameter(), ballOffset());
+		return circleRadiusOfSphere(ballRadius(), ballOffset());
 	}
 
 	double Values::circleArea() {
 		return M_PI * pow(circleRadius(), 2);
+	}
+
+	double Values::circleCircumference() {
+		return 2 * M_PI * circleRadius();
 	}
 
 	double Values::minWidth() {
@@ -245,6 +258,22 @@ namespace ArmatureJoint {
 
 	double Values::maxBallDiameter() {
 		return diameterForCircleRadiusOfSphere((width() / rows()) + 0.05, ballOffset());
+	}
+
+	double Values::expectedArea() {
+		return (length() * width()) - (boltCircleArea() + (circleArea() * (double)numJointTypes(ARMATURE_JOINT_OPTION_BALL)));
+	}
+
+	int Values::numJointTypes(std::string expectedJointType) {
+		int num = 0;
+		for (auto row = 1; row <= rows(); row++) {
+			for (auto col = 1; col <= cols(); col++) {
+				auto t = jointType(row, col);
+				if (t == expectedJointType)
+					num++;
+			}
+		}
+		return num;
 	}
 
 	int Values::rows() {

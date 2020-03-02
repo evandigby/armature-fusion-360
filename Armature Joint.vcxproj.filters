@@ -11,6 +11,11 @@
     <ClCompile Include="ArmatureJoint\CommandInputChanged.cpp">
       <Filter>ArmatureJoint</Filter>
     </ClCompile>
+    <ClCompile Include="ArmatureJointApp.cpp" />
+    <ClCompile Include="ArmatureJoint\Values.cpp" />
+    <ClCompile Include="ArmatureJoint\JointPlate.cpp">
+      <Filter>ArmatureJoint</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
@@ -31,6 +36,12 @@
       <Filter>ArmatureJoint</Filter>
     </ClInclude>
     <ClInclude Include="ArmatureJoint\CommandInputChanged.h">
+      <Filter>ArmatureJoint</Filter>
+    </ClInclude>
+    <ClInclude Include="ArmatureJointApp.h" />
+    <ClInclude Include="ArmatureJoint\UI.h" />
+    <ClInclude Include="ArmatureJoint\Values.h" />
+    <ClInclude Include="ArmatureJoint\JointPlate.h">
       <Filter>ArmatureJoint</Filter>
     </ClInclude>
   </ItemGroup>

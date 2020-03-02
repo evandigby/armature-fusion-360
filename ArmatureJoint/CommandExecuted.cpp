@@ -5,130 +5,149 @@
 
 #include <string>
 
+#include "JointPlate.h"
 #include "UI.h"
 
 namespace ArmatureJoint {
-	bool CommandExecuted::createJointPlate(Ptr<Component> component, Ptr<ConstructionPlane> plane, shared_ptr<Values> values) {
-		auto sketches = component->sketches();
-		if (!sketches)
+	bool CommandExecuted::createJointNuts(Ptr<Component> component, shared_ptr<Values> values) {
+		auto planes = component->constructionPlanes();
+		if (!planes)
 			return false;
 
-		auto sketch = sketches->add(plane);
-		if (!sketch)
-			return false;
+		for (auto col = 1; col <= values->cols(); col++) {
+			auto planeInput = planes->createInput(component->xZConstructionPlane());
+			if (!planeInput)
+				return false;
 
-		if (!sketch->name("Joint Plate"))
-			return false;
+			planeInput->setByOffset(component->yZConstructionPlane(), ValueInput::createByReal(values->ballX(col)));
 
-		auto curves = sketch->sketchCurves();
-		if (!curves)
-			return false;
+			auto plane = planes->add(planeInput);
+			if (!plane)
+				return false;
 
-		auto lines = curves->sketchLines();
-		if (!lines)
-			return false;
+			plane->name("Joint Nuts " + std::to_string(col));
 
-		auto rectangle = lines->addTwoPointRectangle(Point3D::create(0, 0, 0), Point3D::create(values->length(), -values->width(), 0));
-		if (!rectangle)
-			return false;
-		auto rectangleArea = values->length() * values->width();
+			auto sketches = component->sketches();
+			if (!sketches)
+				return false;
 
-		auto circles = curves->sketchCircles();
-		if (!circles)
-			return false;
+			auto sketch = sketches->add(plane);
+			if (!sketch)
+				return false;
 
-		double expectedSubtractionArea = 0;
+			sketch->name("Joint Nuts Sketch" + std::to_string(col));
 
-		auto boltCircle = circles->addByCenterRadius(
-			Point3D::create(
-				values->length() / 2,
-				-values->width() / 2,
-				0
-			),
-			values->boltHoleRadius()
-		);
-		if (!boltCircle)
-			return false;
+			auto added = 0;
 
-		expectedSubtractionArea += values->boltCircleArea();
+			auto curves = sketch->sketchCurves();
+			if (!curves)
+				return false;
 
-		for (auto row = 1; row <= values->rows(); row++) {
-			for (auto col = 1; col <= values->cols(); col++) {
-				if (values->jointType(row, col) != ARMATURE_JOINT_OPTION_BALL)
+			auto lines = curves->sketchLines();
+			if (!lines)
+				return false;
+
+			auto circles = curves->sketchCircles();
+			if (!circles)
+				return false;
+
+			auto thirty = (30.0 / 180.0) * M_PI; // half of the hex angle
+			for (auto row = 1; row <= values->rows(); row++) {
+				auto jointType = values->jointType(row, col);
+
+				if (jointType != ARMATURE_JOINT_OPTION_NUT)
 					continue;
 
-				auto ballCircle = circles->addByCenterRadius(
-					Point3D::create(
-						values->ballX(col),
-						values->ballY(row),
-						0
-					),
-					values->circleRadius()
-				);
-				if (!ballCircle)
+				added++;
+
+				auto off = values->ballOffset();
+
+				auto centre = Point3D::create(values->ballY(row), values->ballZ(), 0);
+				if (!centre)
 					return false;
 
-				expectedSubtractionArea += values->circleArea();
+				auto topCentre = Point3D::create(centre->x(),  centre->y() + off, 0);
+				if (!topCentre)
+					return false;
+
+				// opp = adj / tan(theta)
+				auto opp = values->ballOffset() * tan(thirty);
+
+				std::list<Ptr<Point3D>> hexPoints;
+
+				hexPoints.push_back(Point3D::create(centre->x() - opp, centre->y() + off, 0));
+				hexPoints.push_back(Point3D::create(centre->x() + opp, centre->y() + off, 0));
+				hexPoints.push_back(Point3D::create(centre->x() + (2 * opp), centre->y(), 0));
+				hexPoints.push_back(Point3D::create(centre->x() + opp, centre->y() - off, 0));
+				hexPoints.push_back(Point3D::create(centre->x() - opp, centre->y() - off, 0));
+				hexPoints.push_back(Point3D::create(centre->x() - (2 * opp), centre->y(), 0));
+
+				Ptr<Point3D> last = nullptr;
+				Ptr<Point3D> first = nullptr;
+				
+				for (auto p = hexPoints.begin(); p != hexPoints.end(); p++) {
+					if (last != nullptr) {
+						auto line = lines->addByTwoPoints(last, *p);
+						if (!line)
+							return false;
+					}
+					else {
+						first = *p;
+					}
+					last = *p;
+				}
+				auto line = lines->addByTwoPoints(last, first);
+				if (!line)
+					return false;
+
+				auto circle = circles->addByCenterRadius(centre, values->boltHoleRadius());
+				if (!circle)
+					return false;
+			}
+
+			if (added == 0) {
+				sketch->deleteMe();
+				plane->deleteMe();
+				return true;
+			}
+
+			auto features = component->features();
+			if (!features)
+				return false;
+
+			auto extrudes = features->extrudeFeatures();
+			if (!extrudes)
+				return false;
+
+			auto profiles = sketch->profiles();
+			if (!profiles)
+				return false;
+
+			auto boltArea = values->boltCircleArea();
+			auto boltDelta = boltArea * 0.005;
+
+			for (auto i = 0; i < profiles->count(); i++) {
+				auto profile = profiles->item(i);
+				if (!profile)
+					return false;
+
+				auto areaProps = profile->areaProperties();
+				if (!areaProps)
+					return false;
+
+				auto area = areaProps->area();
+				if (area > (boltArea - boltDelta) && area < (boltArea + boltDelta))
+					continue;
+
+				auto extrudeInput = extrudes->createInput(profile, FeatureOperations::NewBodyFeatureOperation);
+				if (!extrudeInput)
+					return false;
+
+				extrudeInput->setSymmetricExtent(ValueInput::createByReal(values->ballRadius() / 2), false, 0);
+
+				auto extrude = extrudes->add(extrudeInput);
 			}
 		}
-
-		auto features = component->features();
-		if (!features)
-			return false;
-
-		auto extrudes = features->extrudeFeatures();
-		if (!extrudes)
-			return false;
-
-		auto profiles = sketch->profiles();
-		if (!profiles || profiles->count() < 1)
-			return false;
-
-		auto accuracy = CalculationAccuracy::LowCalculationAccuracy;
-		auto expectedArea = rectangleArea - expectedSubtractionArea;
-		auto delta = expectedArea * 0.005; // Low calculation accuracy is within 0.5%. We don't have many profiles so that's fine.
-
-		Ptr<Profile> profile;
-		for (auto i = 0; i < profiles->count(); i++)
-		{
-			auto current = profiles->item(i);
-			if (!current)
-				return false;
-
-			auto areaProps = current->areaProperties(accuracy);
-			if (!areaProps)
-				return false;
-
-
-			auto area = areaProps->area();
-			if (area > expectedArea - delta && area < expectedArea + delta) {
-				profile = current;
-				break;
-			}
-		}
-		if (!profile)
-			return false;
-
-		auto thicknessInput = ValueInput::createByReal(values->thickness());
-		if (!thicknessInput)
-			return false;
-
-		auto extrude = extrudes->addSimple(profile, thicknessInput, FeatureOperations::NewBodyFeatureOperation);
-		if (!extrude)
-			return false;
-
-		auto bodies = extrude->bodies();
-		if (!bodies)
-			return false;
-
-		for (auto i = 0; i < bodies->count(); i++) {
-			auto body = bodies->item(i);
-			if (!body)
-				return false;
-
-			body->name("Plate");
-		}
-		return true;
 	}
 
 	bool CommandExecuted::createJointBall(Ptr<Component> component, shared_ptr<Values> values) {
@@ -146,7 +165,7 @@ namespace ArmatureJoint {
 		if (!plane)
 			return false;
 
-		plane->name("Joint Ball");
+		plane->name("Joint Balls");
 
 		auto sketches = component->sketches();
 		if (!sketches)
@@ -345,7 +364,7 @@ namespace ArmatureJoint {
 		if (!planeInput)
 			return;
 
-		planeInput->setByOffset(component->xZConstructionPlane(), ValueInput::createByReal(values->thickness() + (values->ballDiameter() - values->ballOffset())));
+		planeInput->setByOffset(component->xZConstructionPlane(), ValueInput::createByReal(values->ballZ() + values->plateOffset()));
 
 		auto plane = planes->add(planeInput);
 		if (!plane)
@@ -354,13 +373,18 @@ namespace ArmatureJoint {
 		if (!plane->name("Joint Top Offset"))
 			return;
 
-		if (!createJointPlate(component, component->xZConstructionPlane(), values))
+		auto bottom = JointPlate::create(component, component->xZConstructionPlane(), values, false);
+		if (!bottom)
 			return;
 
-		if (!createJointPlate(component, plane, values))
+		auto top = JointPlate::create(component, plane, values, true);
+		if (!top)
 			return;
 
 		if (!createJointBall(component, values))
+			return;
+
+		if (!createJointNuts(component, values))
 			return;
 	}
 }

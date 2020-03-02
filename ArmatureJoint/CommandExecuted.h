@@ -17,8 +17,9 @@ namespace ArmatureJoint {
 			app = _app;
 		}
 
-		bool createJointPlate(Ptr<Component> component, Ptr<ConstructionPlane> plane, shared_ptr<Values> values);
 		bool createJointBall(Ptr<Component> component, shared_ptr<Values> values);
+		bool createJointNuts(Ptr<Component> component, shared_ptr<Values> values);
+
 		void notify(const Ptr<CommandEventArgs>& eventArgs) override;
 	};
 }
